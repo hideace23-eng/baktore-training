@@ -3,6 +3,7 @@
 import { useState } from "react";
 import LessonViewer from "@/components/LessonViewer";
 import SkillChecklist from "@/components/SkillChecklist";
+import AiChat from "@/components/AiChat";
 import type { CheckStatus } from "@/lib/types";
 
 interface LessonWithProgress {
@@ -20,7 +21,7 @@ interface CourseWithLessons {
   lessons: LessonWithProgress[];
 }
 
-type Tab = "checklist" | "courses";
+type Tab = "checklist" | "courses" | "ai";
 
 export default function StudentDashboardClient({
   courses,
@@ -43,6 +44,7 @@ export default function StudentDashboardClient({
   const tabs: { key: Tab; label: string }[] = [
     { key: "checklist", label: "研修チェックリスト" },
     { key: "courses", label: "コース教材" },
+    { key: "ai", label: "AIに質問" },
   ];
 
   if (selectedLesson) {
@@ -142,6 +144,8 @@ export default function StudentDashboardClient({
           )}
         </>
       )}
+
+      {tab === "ai" && <AiChat />}
     </div>
   );
 }
