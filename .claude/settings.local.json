@@ -5,7 +5,16 @@
       "Bash(npx next:*)",
       "Bash(npm run:*)",
       "Bash(npm ls:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(while IFS=\",\" read -r cat key name level hint desc idx)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(pbcopy)",
+      "Bash(npx tsc:*)",
+      "Bash(wc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git:*)"
     ]
   }
 }

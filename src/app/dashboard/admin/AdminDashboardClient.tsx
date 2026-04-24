@@ -4,6 +4,8 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, CheckStatus } from "@/lib/types";
 import ChecklistProgressView from "@/components/ChecklistProgressView";
+// 将来の有料機能用に残している
+import AiChat from "@/components/AiChat";
 
 interface AdminProps {
   users: Profile[];
@@ -40,14 +42,17 @@ interface AdminProps {
     updated_at: string;
   }[];
   students: { id: string; full_name: string; email: string }[];
+  isSuperAdmin: boolean;
 }
 
-type Tab = "users" | "checklist" | "courses" | "progress" | "logs";
+type Tab = "users" | "checklist" | "courses" | "progress" | "logs" | "ai";
 
 const roleLabels: Record<string, string> = {
-  admin: "管理者",
+  super_admin: "システム管理者",
+  admin: "店長",
   teacher: "先生",
   student: "生徒",
+  guest: "ゲスト",
 };
 
 export default function AdminDashboardClient({
@@ -57,6 +62,7 @@ export default function AdminDashboardClient({
   viewLogs,
   checklistProgress,
   students,
+  isSuperAdmin,
 }: AdminProps) {
   const [tab, setTab] = useState<Tab>("users");
   const supabase = createClient();
@@ -69,16 +75,56 @@ export default function AdminDashboardClient({
     if (!error) window.location.reload();
   }
 
-  const tabs: { key: Tab; label: string; count: number }[] = [
+  const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: "users", label: "ユーザー管理", count: users.length },
     { key: "checklist", label: "研修チェックリスト", count: checklistProgress.length },
     { key: "courses", label: "コース", count: courses.length },
     { key: "progress", label: "コース進捗", count: progress.length },
     { key: "logs", label: "閲覧ログ", count: viewLogs.length },
+    // 将来の有料機能用にsuper_adminのみAIタブ表示
+    ...(isSuperAdmin ? [{ key: "ai" as Tab, label: "AIアシスタント" }] : []),
   ];
 
   return (
     <div>
+      {/* 管理メニューリンク */}
+      <div className="flex gap-3 mb-6 flex-wrap">
+        <a
+          href="/dashboard/admin/checklist"
+          className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition"
+        >
+          チェックリスト管理
+        </a>
+        {isSuperAdmin && (
+          <>
+            <a
+              href="/dashboard/admin/users"
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
+            >
+              ユーザー管理
+            </a>
+            <a
+              href="/dashboard/admin/stores"
+              className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition"
+            >
+              店舗管理
+            </a>
+            <a
+              href="/dashboard/admin/tips"
+              className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition"
+            >
+              豆知識管理
+            </a>
+            <a
+              href="/dashboard/admin/roles"
+              className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition"
+            >
+              権限管理
+            </a>
+          </>
+        )}
+      </div>
+
       {/* 統計カード */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow p-6">
@@ -102,7 +148,7 @@ export default function AdminDashboardClient({
       </div>
 
       {/* タブ */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -113,7 +159,7 @@ export default function AdminDashboardClient({
                 : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
-            {t.label} ({t.count})
+            {t.label}{t.count !== undefined ? ` (${t.count})` : ""}
           </button>
         ))}
       </div>
@@ -124,47 +170,41 @@ export default function AdminDashboardClient({
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  氏名
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  メール
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  役割
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  登録日
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  操作
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">氏名</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">メール</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">役割</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">登録日</th>
+                {isSuperAdmin && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {users.map((u) => (
                 <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {u.full_name || "-"}
-                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{u.full_name || "-"}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{u.email}</td>
                   <td className="px-6 py-4">
-                    <span className="text-sm">{roleLabels[u.role]}</span>
+                    <span className="text-sm">{roleLabels[u.role] || u.role}</span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {new Date(u.created_at).toLocaleDateString("ja-JP")}
                   </td>
-                  <td className="px-6 py-4">
-                    <select
-                      value={u.role}
-                      onChange={(e) => changeRole(u.id, e.target.value)}
-                      className="text-sm border rounded px-2 py-1 text-gray-700"
-                    >
-                      <option value="student">生徒</option>
-                      <option value="teacher">先生</option>
-                      <option value="admin">管理者</option>
-                    </select>
-                  </td>
+                  {isSuperAdmin && (
+                    <td className="px-6 py-4">
+                      <select
+                        value={u.role}
+                        onChange={(e) => changeRole(u.id, e.target.value)}
+                        className="text-sm border rounded px-2 py-1 text-gray-700"
+                      >
+                        <option value="guest">ゲスト</option>
+                        <option value="student">生徒</option>
+                        <option value="teacher">先生</option>
+                        <option value="admin">店長</option>
+                        <option value="super_admin">システム管理者</option>
+                      </select>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -174,10 +214,7 @@ export default function AdminDashboardClient({
 
       {/* 研修チェックリスト */}
       {tab === "checklist" && (
-        <ChecklistProgressView
-          progressData={checklistProgress}
-          students={students}
-        />
+        <ChecklistProgressView progressData={checklistProgress} students={students} />
       )}
 
       {/* コース一覧 */}
@@ -193,9 +230,7 @@ export default function AdminDashboardClient({
             </div>
           ))}
           {courses.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              コースがまだありません
-            </div>
+            <div className="text-center py-12 text-gray-400">コースがまだありません</div>
           )}
         </div>
       )}
@@ -206,57 +241,32 @@ export default function AdminDashboardClient({
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  生徒
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  レッスン
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  ステータス
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  完了日
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">生徒</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">レッスン</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ステータス</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">完了日</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {progress.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
-                    進捗データがありません
-                  </td>
+                  <td colSpan={4} className="px-6 py-8 text-center text-gray-400">進捗データがありません</td>
                 </tr>
               ) : (
                 progress.map((p, i) => (
                   <tr key={i} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {p.profiles?.full_name || p.profiles?.email}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {p.lessons?.title}
-                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{p.profiles?.full_name || p.profiles?.email}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{p.lessons?.title}</td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          p.status === "completed"
-                            ? "bg-green-100 text-green-700"
-                            : p.status === "in_progress"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        {p.status === "completed"
-                          ? "完了"
-                          : p.status === "in_progress"
-                            ? "学習中"
-                            : "未開始"}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        p.status === "completed" ? "bg-green-100 text-green-700" :
+                        p.status === "in_progress" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-500"
+                      }`}>
+                        {p.status === "completed" ? "完了" : p.status === "in_progress" ? "学習中" : "未開始"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {p.completed_at
-                        ? new Date(p.completed_at).toLocaleDateString("ja-JP")
-                        : "-"}
+                      {p.completed_at ? new Date(p.completed_at).toLocaleDateString("ja-JP") : "-"}
                     </td>
                   </tr>
                 ))
@@ -272,42 +282,25 @@ export default function AdminDashboardClient({
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  ユーザー
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  レッスン
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  閲覧日時
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  閲覧時間
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ユーザー</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">レッスン</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">閲覧日時</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">閲覧時間</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {viewLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
-                    閲覧ログがありません
-                  </td>
+                  <td colSpan={4} className="px-6 py-8 text-center text-gray-400">閲覧ログがありません</td>
                 </tr>
               ) : (
                 viewLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {log.profiles?.full_name || log.profiles?.email}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {log.lessons?.title}
-                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{log.profiles?.full_name || log.profiles?.email}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{log.lessons?.title}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(log.viewed_at).toLocaleString("ja-JP")}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(log.viewed_at).toLocaleString("ja-JP")}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {Math.floor(log.duration_seconds / 60)}分
-                      {log.duration_seconds % 60}秒
+                      {Math.floor(log.duration_seconds / 60)}分{log.duration_seconds % 60}秒
                     </td>
                   </tr>
                 ))
@@ -316,6 +309,9 @@ export default function AdminDashboardClient({
           </table>
         </div>
       )}
+
+      {/* AIアシスタント - super_adminのみ (将来の有料機能用に残している) */}
+      {tab === "ai" && isSuperAdmin && <AiChat />}
     </div>
   );
 }

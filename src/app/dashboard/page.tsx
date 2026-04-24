@@ -19,13 +19,34 @@ export default async function DashboardPage() {
   // トリガーが動いていない場合、アプリ側でプロフィールを自動作成
   if (!profile) {
     const meta = user.user_metadata || {};
+
+    // 招待トークン経由の場合、招待されたロールを使用
+    let assignedRole = "student";
+    if (meta.invitation_token) {
+      const { data: invitation } = await supabase
+        .from("invitations")
+        .select("role, used_at")
+        .eq("token", meta.invitation_token)
+        .single();
+
+      if (invitation && !invitation.used_at) {
+        assignedRole = invitation.role;
+        // 招待を使用済みにする
+        await supabase
+          .from("invitations")
+          .update({ used_at: new Date().toISOString() })
+          .eq("token", meta.invitation_token);
+      }
+    }
+
     const { data: newProfile, error } = await supabase
       .from("profiles")
       .insert({
         id: user.id,
         email: user.email || "",
         full_name: meta.full_name || "",
-        role: meta.role || "student",
+        role: assignedRole,
+        store_id: meta.store_id || null,
       })
       .select()
       .single();
@@ -39,7 +60,7 @@ export default async function DashboardPage() {
               プロフィール作成エラー
             </h1>
             <p className="text-gray-600 text-sm mb-2">
-              Supabase SQL Editor で <code className="bg-gray-100 px-1 rounded">supabase-schema-en.sql</code> を実行済みか確認してください。
+              Supabase SQL Editor で最新のマイグレーションSQLを実行済みか確認してください。
             </p>
             <p className="text-red-500 text-xs mt-2">{error.message}</p>
           </div>
@@ -51,10 +72,14 @@ export default async function DashboardPage() {
   }
 
   switch (profile.role) {
+    case "super_admin":
+      redirect("/dashboard/admin");
     case "admin":
       redirect("/dashboard/admin");
     case "teacher":
       redirect("/dashboard/teacher");
+    case "guest":
+      redirect("/dashboard/student");
     case "student":
     default:
       redirect("/dashboard/student");

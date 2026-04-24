@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import LessonViewer from "@/components/LessonViewer";
 import SkillChecklist from "@/components/SkillChecklist";
-import AiChat from "@/components/AiChat";
-import type { CheckStatus } from "@/lib/types";
+import DailyTipCard from "@/components/DailyTipCard";
+import CharacterSelectModal from "@/components/CharacterSelectModal";
+import CharacterDisplay from "@/components/CharacterDisplay";
+// 将来の有料機能用に残している (AiChat, api/chat/route.ts)
+import type { CheckStatus, CharacterState } from "@/lib/types";
 
 interface LessonWithProgress {
   id: string;
@@ -21,12 +25,14 @@ interface CourseWithLessons {
   lessons: LessonWithProgress[];
 }
 
-type Tab = "checklist" | "courses" | "ai";
+type Tab = "checklist" | "courses" | "skill-tree" | "faq" | "guide";
 
 export default function StudentDashboardClient({
   courses,
   userId,
   checklistProgress,
+  initialCharacterState,
+  actAsMode,
 }: {
   courses: CourseWithLessons[];
   userId: string;
@@ -37,14 +43,46 @@ export default function StudentDashboardClient({
     status: CheckStatus;
     rating: number | null;
   }[];
+  initialCharacterState: CharacterState | null;
+  actAsMode?: {
+    targetUserId: string;
+    targetName: string;
+    actorId: string;
+    actorName: string;
+  };
 }) {
   const [tab, setTab] = useState<Tab>("checklist");
   const [selectedLesson, setSelectedLesson] = useState<LessonWithProgress | null>(null);
+  const [character, setCharacter] = useState<CharacterState | null>(initialCharacterState);
+
+  // 連続ログインXPトリガー（初回マウント時のみ）
+  useEffect(() => {
+    if (character) {
+      fetch("/api/xp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "consecutive_login", resourceId: "daily" }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.character) setCharacter(data.character);
+        })
+        .catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // キャラ未作成 → 選択モーダル
+  if (!character) {
+    return <CharacterSelectModal userId={userId} onComplete={(c) => setCharacter(c)} />;
+  }
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "checklist", label: "研修チェックリスト" },
+    { key: "checklist", label: "チェックリスト" },
+    { key: "skill-tree", label: "スキルツリー" },
+    { key: "faq", label: "FAQ" },
+    { key: "guide", label: "使い方" },
     { key: "courses", label: "コース教材" },
-    { key: "ai", label: "AIに質問" },
   ];
 
   if (selectedLesson) {
@@ -63,6 +101,28 @@ export default function StudentDashboardClient({
 
   return (
     <div>
+      {/* 代理チェックモード バナー */}
+      {actAsMode && (
+        <div className="mb-4 bg-yellow-50 border border-yellow-300 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span className="text-sm text-yellow-800 font-medium">
+            {"\uD83C\uDFAD"} <strong>{actAsMode.targetName}</strong> として操作中
+          </span>
+          <Link
+            href="/dashboard/teacher"
+            className="text-sm font-bold text-yellow-700 hover:text-yellow-900 underline"
+          >
+            自分に戻る
+          </Link>
+        </div>
+      )}
+
+      {/* キャラクター表示 */}
+      <CharacterDisplay
+        characterState={character}
+        compact
+        onCharacterUpdate={(c) => setCharacter(c)}
+      />
+
       <div className="flex gap-2 mb-6">
         {tabs.map((t) => (
           <button
@@ -80,7 +140,43 @@ export default function StudentDashboardClient({
       </div>
 
       {tab === "checklist" && (
-        <SkillChecklist userId={userId} initialProgress={checklistProgress} />
+        <>
+          <DailyTipCard userId={userId} />
+          <SkillChecklist userId={userId} initialProgress={checklistProgress} actorId={actAsMode?.actorId} />
+        </>
+      )}
+
+      {tab === "skill-tree" && (
+        <div className="text-center py-8">
+          <a
+            href="/dashboard/skill-tree"
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition"
+          >
+            スキルツリーを表示
+          </a>
+        </div>
+      )}
+
+      {tab === "faq" && (
+        <div className="text-center py-8">
+          <a
+            href="/dashboard/faq"
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition"
+          >
+            FAQページを表示
+          </a>
+        </div>
+      )}
+
+      {tab === "guide" && (
+        <div className="text-center py-8">
+          <a
+            href="/dashboard/guide"
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition"
+          >
+            使い方ガイドを表示
+          </a>
+        </div>
       )}
 
       {tab === "courses" && (
@@ -144,8 +240,6 @@ export default function StudentDashboardClient({
           )}
         </>
       )}
-
-      {tab === "ai" && <AiChat />}
     </div>
   );
 }

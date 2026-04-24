@@ -102,7 +102,7 @@ export default function AiChat() {
               className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
                 msg.role === "user"
                   ? "bg-blue-600 text-white rounded-br-md whitespace-pre-wrap"
-                  : "bg-gray-100 text-gray-800 rounded-bl-md prose prose-sm prose-gray"
+                  : "bg-gray-100 text-gray-900 rounded-bl-md prose prose-sm prose-gray"
               }`}
             >
               {msg.role === "assistant" ? (
@@ -132,7 +132,7 @@ export default function AiChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="質問を入力..."
-          className="flex-1 px-4 py-2 border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 px-4 py-2 border rounded-full text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           disabled={loading}
         />
         <button

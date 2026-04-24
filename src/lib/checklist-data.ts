@@ -5,8 +5,9 @@ export interface SubCheck {
 }
 
 export interface CheckItem {
-  l: string;   // label
-  v?: string;  // video title
+  l: string;      // label
+  v?: string;     // video title
+  vUrl?: string;  // video URL (YouTube etc.)
   sub: SubCheck[];
 }
 
@@ -17,6 +18,8 @@ export interface Skill {
   hint: string;
   desc: string;
   checks: CheckItem[];
+  difficulty_level?: number;
+  default_expanded?: boolean;
 }
 
 export interface Category {
@@ -267,6 +270,7 @@ export function getCategoryColor(color: string) {
     case "front": return { dot: "bg-blue-500", bar: "bg-blue-500", border: "border-blue-400", text: "text-blue-700" };
     case "side": return { dot: "bg-green-500", bar: "bg-green-500", border: "border-green-400", text: "text-green-700" };
     case "special": return { dot: "bg-orange-500", bar: "bg-orange-500", border: "border-orange-400", text: "text-orange-700" };
+    case "combo": return { dot: "bg-pink-500", bar: "bg-pink-500", border: "border-pink-400", text: "text-pink-700" };
     default: return { dot: "bg-gray-500", bar: "bg-gray-500", border: "border-gray-400", text: "text-gray-700" };
   }
 }

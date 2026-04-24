@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" fill="none">
+  <defs>
+    <radialGradient id="aura_m" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD54F" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#FFD54F" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="60" cy="70" r="55" fill="url(#aura_m)"/>
+  <circle cx="60" cy="30" r="20" fill="#FFECB3"/>
+  <path d="M42 18 Q60 5 78 18" fill="#3E2723"/>
+  <circle cx="52" cy="28" r="3" fill="#3E2723"/>
+  <circle cx="68" cy="28" r="3" fill="#3E2723"/>
+  <path d="M52 37 Q60 44 68 37" fill="none" stroke="#3E2723" stroke-width="2.5" stroke-linecap="round"/>
+  <rect x="44" y="48" width="32" height="38" rx="8" fill="#E53935"/>
+  <text x="60" y="72" text-anchor="middle" fill="#FFD54F" font-size="14" font-weight="bold">★</text>
+  <line x1="44" y1="55" x2="10" y2="30" stroke="#FFECB3" stroke-width="6" stroke-linecap="round"/>
+  <line x1="76" y1="55" x2="110" y2="30" stroke="#FFECB3" stroke-width="6" stroke-linecap="round"/>
+  <line x1="52" y1="86" x2="35" y2="120" stroke="#FFECB3" stroke-width="6" stroke-linecap="round"/>
+  <line x1="68" y1="86" x2="85" y2="120" stroke="#FFECB3" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="35" cy="122" r="5" fill="#E53935"/>
+  <circle cx="85" cy="122" r="5" fill="#E53935"/>
+  <polygon points="60,2 63,10 71,10 65,15 67,23 60,19 53,23 55,15 49,10 57,10" fill="#FFD54F"/>
+</svg>

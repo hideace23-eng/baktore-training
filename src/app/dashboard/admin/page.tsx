@@ -18,7 +18,9 @@ export default async function AdminDashboard() {
     .single();
 
   if (!profile) redirect("/dashboard");
-  if (profile.role !== "admin") redirect("/dashboard/" + profile.role);
+  if (profile.role !== "super_admin" && profile.role !== "admin") {
+    redirect("/dashboard/" + (profile.role === "teacher" ? "teacher" : "student"));
+  }
 
   // 全ユーザー取得
   const { data: users } = await supabase
@@ -72,6 +74,7 @@ export default async function AdminDashboard() {
           viewLogs={viewLogs || []}
           checklistProgress={checklistWithStudents}
           students={students}
+          isSuperAdmin={profile.role === "super_admin"}
         />
       </main>
     </div>

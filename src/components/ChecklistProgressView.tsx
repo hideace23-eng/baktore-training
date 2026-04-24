@@ -178,7 +178,7 @@ export default function ChecklistProgressView({ progressData, students }: Props)
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filtered.map((r, i) => {
+                {filtered.map((r) => {
                   const colors = getCategoryColor(CHECKLIST_DATA[r.catKey]?.color || "");
                   return (
                     <tr key={`${r.userId}-${r.skillId}`} className="hover:bg-gray-50">
