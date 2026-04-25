@@ -33,6 +33,7 @@ export default function StudentDashboardClient({
   checklistProgress,
   initialCharacterState,
   actAsMode,
+  viewAsMode,
 }: {
   courses: CourseWithLessons[];
   userId: string;
@@ -49,6 +50,10 @@ export default function StudentDashboardClient({
     targetName: string;
     actorId: string;
     actorName: string;
+  };
+  viewAsMode?: {
+    mode: "student";
+    actualRole: string;
   };
 }) {
   const [tab, setTab] = useState<Tab>("checklist");
@@ -72,8 +77,38 @@ export default function StudentDashboardClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // キャラ未作成 → 選択モーダル
+  // キャラ未作成
   if (!character) {
+    // view_as モードではキャラ作成させず案内メッセージを表示
+    if (viewAsMode) {
+      return (
+        <div>
+          <div className="mb-4 bg-yellow-50 border border-yellow-300 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-yellow-800 font-medium">
+              🎭 生徒モードで表示中（あなたは{viewAsMode.actualRole === "super_admin" ? "システム管理者" : "店長"}です）
+            </span>
+            <Link
+              href="/dashboard/admin"
+              className="text-sm font-bold text-yellow-700 hover:text-yellow-900 underline"
+            >
+              元に戻る
+            </Link>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
+            <p className="text-blue-800 font-medium mb-2">管理者にはまだデータがありません</p>
+            <p className="text-blue-600 text-sm">
+              実際の生徒データで確認するには、生徒選択画面から act_as 機能をご利用ください。
+            </p>
+            <Link
+              href="/dashboard/teacher?view_as=teacher"
+              className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+            >
+              生徒選択画面へ
+            </Link>
+          </div>
+        </div>
+      );
+    }
     return <CharacterSelectModal userId={userId} onComplete={(c) => setCharacter(c)} />;
   }
 
@@ -99,6 +134,8 @@ export default function StudentDashboardClient({
     );
   }
 
+  const roleLabel = viewAsMode?.actualRole === "super_admin" ? "システム管理者" : "店長";
+
   return (
     <div>
       {/* 代理チェックモード バナー */}
@@ -112,6 +149,21 @@ export default function StudentDashboardClient({
             className="text-sm font-bold text-yellow-700 hover:text-yellow-900 underline"
           >
             自分に戻る
+          </Link>
+        </div>
+      )}
+
+      {/* view_as モード バナー */}
+      {viewAsMode && !actAsMode && (
+        <div className="mb-4 bg-yellow-50 border border-yellow-300 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span className="text-sm text-yellow-800 font-medium">
+            🎭 生徒モードで表示中（あなたは{roleLabel}です）
+          </span>
+          <Link
+            href="/dashboard/admin"
+            className="text-sm font-bold text-yellow-700 hover:text-yellow-900 underline"
+          >
+            元に戻る
           </Link>
         </div>
       )}
@@ -141,6 +193,37 @@ export default function StudentDashboardClient({
 
       {tab === "checklist" && (
         <>
+          {/* Tutorial banner: 柔軟・倒立が両方未着手の場合に案内 */}
+          {(() => {
+            const flexDone = checklistProgress.some(p => p.skill_id === "flexibility" && p.sub_index === -1 && p.status === "done");
+            const handDone = checklistProgress.some(p => p.skill_id === "tutorial_handstand" && p.sub_index === -1 && p.status === "done");
+            const flexStarted = checklistProgress.some(p => p.skill_id === "flexibility");
+            const handStarted = checklistProgress.some(p => p.skill_id === "tutorial_handstand");
+            if (!flexDone && !handDone && !flexStarted && !handStarted) {
+              return (
+                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">💪</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-amber-800 mb-1">
+                        柔軟と倒立にもチャレンジしてみよう！
+                      </p>
+                      <p className="text-xs text-amber-600">
+                        すべての技の土台になります。スキルツリーからチャレンジできるよ！
+                      </p>
+                      <a
+                        href="/dashboard/skill-tree"
+                        className="inline-block mt-2 px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-xl hover:bg-amber-600 transition"
+                      >
+                        🗺️ スキルツリーへ
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
           <DailyTipCard userId={userId} />
           <SkillChecklist userId={userId} initialProgress={checklistProgress} actorId={actAsMode?.actorId} />
         </>

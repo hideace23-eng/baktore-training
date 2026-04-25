@@ -132,3 +132,14 @@ body {
   100% { opacity: 1; transform: translate(-50%, 0); }
 }
 .animate-toast-in { animation: toast-in 0.3s ease-out; }
+
+/* Tutorial node shimmer glow */
+@keyframes tutorial-shimmer {
+  0% { box-shadow: 0 0 8px 2px rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 0 16px 6px rgba(251, 191, 36, 0.5); }
+  100% { box-shadow: 0 0 8px 2px rgba(251, 191, 36, 0.3); }
+}
+
+.animate-tutorial-shimmer {
+  animation: tutorial-shimmer 2.5s ease-in-out infinite;
+}
