@@ -3,7 +3,16 @@ import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import TeacherDashboardClient from "./TeacherDashboardClient";
 
-export default async function TeacherDashboard() {
+const roleLabels: Record<string, string> = {
+  super_admin: "システム管理者",
+  admin: "店長",
+};
+
+export default async function TeacherDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ view_as?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -18,7 +27,13 @@ export default async function TeacherDashboard() {
     .single();
 
   if (!profile) redirect("/dashboard");
-  if (!["teacher", "admin", "super_admin"].includes(profile.role)) {
+
+  const params = await searchParams;
+  const viewAsParam = params.view_as;
+  const isAdmin = ["admin", "super_admin"].includes(profile.role);
+  const viewAsTeacher = isAdmin && viewAsParam === "teacher";
+
+  if (!viewAsTeacher && !["teacher", "admin", "super_admin"].includes(profile.role)) {
     redirect("/dashboard/student");
   }
 
@@ -46,7 +61,6 @@ export default async function TeacherDashboard() {
   }
 
   // admin/super_admin は全店舗・全生徒を見られる
-  const isAdmin = profile.role === "admin" || profile.role === "super_admin";
 
   // 生徒一覧を取得
   let studentsQuery = supabase
@@ -128,7 +142,22 @@ export default async function TeacherDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header profile={profile} />
+      <Header profile={profile} actualRole={viewAsTeacher ? profile.role : undefined} />
+      {viewAsTeacher && (
+        <div className="bg-yellow-50 border-b border-yellow-300 px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <span className="text-sm text-yellow-800 font-medium">
+              🎭 先生モードで表示中（あなたは{roleLabels[profile.role]}です）
+            </span>
+            <a
+              href="/dashboard/admin"
+              className="text-sm font-bold text-yellow-700 hover:text-yellow-900 underline"
+            >
+              元に戻る
+            </a>
+          </div>
+        </div>
+      )}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentStoreName && (
           <p className="text-sm text-gray-500 mb-4">

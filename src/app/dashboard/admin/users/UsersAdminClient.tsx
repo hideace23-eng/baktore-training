@@ -36,6 +36,11 @@ export default function UsersAdminClient() {
   const [filterStore, setFilterStore] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
 
+  // ロール変更の保留状態: { userId: newRole }
+  const [pendingRoles, setPendingRoles] = useState<Record<string, string>>({});
+  // トースト
+  const [toast, setToast] = useState<string | null>(null);
+
   // Invite state
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -53,13 +58,34 @@ export default function UsersAdminClient() {
 
   useEffect(() => { reload().then(() => setLoading(false)); }, [reload]);
 
-  async function changeRole(targetUserId: string, role: string) {
+  function stageRoleChange(targetUserId: string, newRole: string, currentRole: string) {
+    if (newRole === currentRole) {
+      setPendingRoles((prev) => {
+        const next = { ...prev };
+        delete next[targetUserId];
+        return next;
+      });
+    } else {
+      setPendingRoles((prev) => ({ ...prev, [targetUserId]: newRole }));
+    }
+  }
+
+  async function saveRole(targetUserId: string) {
+    const role = pendingRoles[targetUserId];
+    if (!role) return;
     await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "change_role", targetUserId, role }),
     });
+    setPendingRoles((prev) => {
+      const next = { ...prev };
+      delete next[targetUserId];
+      return next;
+    });
     await reload();
+    setToast("✅ ロールを更新しました");
+    setTimeout(() => setToast(null), 3000);
   }
 
   async function toggleGold(targetUserId: string, current: boolean) {
@@ -162,6 +188,13 @@ export default function UsersAdminClient() {
         <span className="text-sm text-gray-500 self-center">{filtered.length}件</span>
       </div>
 
+      {/* トースト通知 */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-green-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium z-50 animate-[fadeIn_0.3s_ease-out]">
+          {toast}
+        </div>
+      )}
+
       {/* テーブル */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <div className="overflow-x-auto">
@@ -182,10 +215,23 @@ export default function UsersAdminClient() {
                   <td className="px-4 py-3 text-sm text-gray-900">{u.full_name || "-"}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{u.email}</td>
                   <td className="px-4 py-3">
-                    <select value={u.role} onChange={(e) => changeRole(u.id, e.target.value)}
-                      className="text-xs border rounded px-2 py-1 text-gray-700">
-                      {roleOptions.map((r) => <option key={r} value={r}>{roleLabels[r]}</option>)}
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={pendingRoles[u.id] ?? u.role}
+                        onChange={(e) => stageRoleChange(u.id, e.target.value, u.role)}
+                        className="text-xs border rounded px-2 py-1 text-gray-700"
+                      >
+                        {roleOptions.map((r) => <option key={r} value={r}>{roleLabels[r]}</option>)}
+                      </select>
+                      {pendingRoles[u.id] && (
+                        <button
+                          onClick={() => saveRole(u.id)}
+                          className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition whitespace-nowrap"
+                        >
+                          💾 保存
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <select value={u.store_id || ""} onChange={(e) => changeStore(u.id, e.target.value)}

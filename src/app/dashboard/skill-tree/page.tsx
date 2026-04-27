@@ -114,8 +114,9 @@ const SPECIAL_NODES: SkillNodeDef[] = [
   { key: "macaco",     name: "マカコ",         category: "special", level: 5, x: 0, y: 0 },
   { key: "gainer",     name: "ゲイナー",       category: "special", level: 5, x: 1, y: 0 },
   { key: "side_flip",  name: "サイドフリップ",  category: "special", level: 6, x: 2, y: 0 },
-  { key: "helicopter", name: "ヘリコプテイロ",  category: "special", level: 7, x: 3, y: 0 },
-  { key: "cork",       name: "コーク",         category: "special", level: 7, x: 4, y: 0 },
+  { key: "five_forty", name: "540",            category: "special", level: 6, x: 3, y: 0 },
+  { key: "helicopter", name: "ヘリコプテイロ",  category: "special", level: 7, x: 4, y: 0 },
+  { key: "cork",       name: "コーク",         category: "special", level: 7, x: 5, y: 0 },
 ];
 
 // All nodes combined for lookups
@@ -703,11 +704,15 @@ export default function SkillTreePage() {
         </div>
 
         {/* ===== Special Skills ===== */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-sm p-4 sm:p-6 border border-white/80 mb-32">
-          <h3 className="text-sm font-extrabold text-amber-600 mb-4 flex items-center gap-1.5">
-            ✨ スペシャルクエスト
+        <div className="bg-gradient-to-br from-purple-50/80 via-pink-50/60 to-amber-50/80 backdrop-blur-sm rounded-3xl shadow-sm p-4 sm:p-6 border border-purple-200/60 mb-32">
+          <h3 className="text-sm font-extrabold mb-4 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
+              ✨ Special
+            </span>
+            <span className="text-purple-700">スペシャルクエスト</span>
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <p className="text-xs text-purple-500 mb-4">前提なし! 好きな技に自由にチャレンジしよう</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             {SPECIAL_NODES.map((node) => (
               <SkillNode
                 key={node.key}

@@ -6,7 +6,7 @@ import StudentDashboardClient from "./StudentDashboardClient";
 export default async function StudentDashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ act_as?: string }>;
+  searchParams: Promise<{ act_as?: string; view_as?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -25,14 +25,20 @@ export default async function StudentDashboard({
 
   const params = await searchParams;
   const actAsParam = params.act_as;
+  const viewAsParam = params.view_as;
 
   // act_as モード判定: teacher/admin/super_admin のみ使用可能
   const isPrivileged = ["teacher", "admin", "super_admin"].includes(profile.role);
   const actAsUserId = isPrivileged && actAsParam ? actAsParam : null;
+
+  // view_as モード判定: admin/super_admin が自分のデータで生徒画面を見る
+  const isAdmin = ["admin", "super_admin"].includes(profile.role);
+  const viewAsStudent = isAdmin && viewAsParam === "student";
+
   const targetUserId = actAsUserId || user.id;
 
-  // 通常のロール別リダイレクト（act_asでない場合のみ）
-  if (!actAsUserId) {
+  // 通常のロール別リダイレクト（act_as/view_asでない場合のみ）
+  if (!actAsUserId && !viewAsStudent) {
     if (profile.role !== "student" && profile.role !== "guest") {
       const dest = profile.role === "super_admin" || profile.role === "admin" ? "admin" : "teacher";
       redirect("/dashboard/" + dest);
@@ -80,9 +86,14 @@ export default async function StudentDashboard({
       }
     : undefined;
 
+  // view_as モード情報
+  const viewAsMode = viewAsStudent
+    ? { mode: "student" as const, actualRole: profile.role }
+    : undefined;
+
   return (
     <div className="min-h-screen bg-gradient-main">
-      <Header profile={actAsUserId ? targetProfile : profile} />
+      <Header profile={actAsUserId ? targetProfile : profile} actualRole={viewAsStudent ? profile.role : undefined} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">マイダッシュボード</h2>
         <StudentDashboardClient
@@ -91,6 +102,7 @@ export default async function StudentDashboard({
           checklistProgress={checklistProgress || []}
           initialCharacterState={characterState}
           actAsMode={actAsMode}
+          viewAsMode={viewAsMode}
         />
       </main>
     </div>

@@ -14,7 +14,13 @@
       "Bash(npx tsc:*)",
       "Bash(wc:*)",
       "Bash(npx eslint:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(brew:*)",
+      "Bash(xargs cat:*)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(find /Users/hide/baktore-training/migration*.sql -type f)",
+      "Bash(xargs -I {} basename {})"
     ]
   }
 }
