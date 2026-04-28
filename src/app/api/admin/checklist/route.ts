@@ -30,7 +30,7 @@ export async function GET() {
     .select(`
       id, key, name, color, order_index,
       skills (
-        id, skill_key, name, level, hint, description, order_index,
+        id, skill_key, name, level, hint, description, order_index, difficulty_level, default_expanded,
         check_items (
           id, label, video_title, video_url, order_index,
           check_sub_items (
@@ -49,7 +49,7 @@ export async function GET() {
       .select(`
         id, key, name, color, order_index,
         skills (
-          id, skill_key, name, level, hint, description, order_index,
+          id, skill_key, name, level, hint, description, order_index, difficulty_level, default_expanded,
           check_items (
             id, label, video_title, video_url, order_index
           )
