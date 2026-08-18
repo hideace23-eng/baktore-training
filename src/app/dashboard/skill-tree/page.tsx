@@ -7,6 +7,8 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import SkillNode, { type NodeStatus } from "@/components/SkillNode";
 import QuestBottomSheet from "@/components/QuestBottomSheet";
+import DailyTipCard from "@/components/DailyTipCard";
+import OnboardingModal from "@/components/OnboardingModal";
 import { convertToChecklistData } from "@/lib/checklist-loader";
 import { CHECKLIST_DATA, type ChecklistData, type Skill } from "@/lib/checklist-data";
 import type { CheckStatus } from "@/lib/types";
@@ -371,6 +373,11 @@ export default function SkillTreePage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [xpToast, setXpToast] = useState<{ xp: number; visible: boolean }>({ xp: 0, visible: false });
 
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+
   const router = useRouter();
   const supabase = createClient();
 
@@ -456,6 +463,19 @@ export default function SkillTreePage() {
           setPrereqMap(pMap);
         }
       }
+
+      // Load onboarding state
+      try {
+        const onbRes = await fetch("/api/onboarding").then(r => r.json());
+        if (onbRes.data) {
+          setOnboardingCompleted(onbRes.data.onboarding_completed ?? true);
+          setOnboardingStep(onbRes.data.onboarding_step ?? 0);
+          // Auto-show for fresh users
+          if (!onbRes.data.onboarding_completed && (onbRes.data.onboarding_step ?? 0) === 0) {
+            setShowOnboarding(true);
+          }
+        }
+      } catch { /* onboarding columns may not exist yet */ }
 
       setLoading(false);
     }
@@ -554,6 +574,49 @@ export default function SkillTreePage() {
             ⚔️ クエストマップ
           </h2>
         </div>
+
+        {/* v6.4: オンボーディング未完了バナー */}
+        {!onboardingCompleted && onboardingStep >= 1 && (
+          <div className="mb-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-purple-700 font-medium">
+              ✨ プロフィールを完成させて、あなたにピッタリの技を提案してもらおう
+            </span>
+            <button
+              onClick={() => setShowOnboarding(true)}
+              className="px-4 py-1.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-bold rounded-lg hover:shadow-md transition flex-shrink-0 ml-2"
+            >
+              続きから始める
+            </button>
+          </div>
+        )}
+
+        {/* v6.4: 今日の豆知識 */}
+        {userId && (
+          <div className="mb-4">
+            <DailyTipCard userId={userId} />
+          </div>
+        )}
+
+        {/* オンボーディングモーダル */}
+        {showOnboarding && userId && (
+          <OnboardingModal
+            userId={userId}
+            initialStep={onboardingStep}
+            onComplete={() => {
+              setShowOnboarding(false);
+              setOnboardingCompleted(true);
+            }}
+            onDismiss={() => {
+              setShowOnboarding(false);
+              fetch("/api/onboarding").then(r => r.json()).then(res => {
+                if (res.data) {
+                  setOnboardingStep(res.data.onboarding_step ?? 0);
+                  setOnboardingCompleted(res.data.onboarding_completed ?? false);
+                }
+              }).catch(() => {});
+            }}
+          />
+        )}
 
         {/* Tutorial banner */}
         {showTutorialBanner && (

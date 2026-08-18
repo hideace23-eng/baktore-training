@@ -7,6 +7,7 @@ import SkillChecklist from "@/components/SkillChecklist";
 import DailyTipCard from "@/components/DailyTipCard";
 import CharacterSelectModal from "@/components/CharacterSelectModal";
 import CharacterDisplay from "@/components/CharacterDisplay";
+import OnboardingModal from "@/components/OnboardingModal";
 // 将来の有料機能用に残している (AiChat, api/chat/route.ts)
 import type { CheckStatus, CharacterState } from "@/lib/types";
 
@@ -34,6 +35,7 @@ export default function StudentDashboardClient({
   initialCharacterState,
   actAsMode,
   viewAsMode,
+  onboardingState,
 }: {
   courses: CourseWithLessons[];
   userId: string;
@@ -55,10 +57,27 @@ export default function StudentDashboardClient({
     mode: "student";
     actualRole: string;
   };
+  onboardingState?: {
+    completed: boolean;
+    step: number;
+  };
 }) {
   const [tab, setTab] = useState<Tab>("checklist");
   const [selectedLesson, setSelectedLesson] = useState<LessonWithProgress | null>(null);
   const [character, setCharacter] = useState<CharacterState | null>(initialCharacterState);
+
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(onboardingState?.completed ?? true);
+  const [onboardingStep, setOnboardingStep] = useState(onboardingState?.step ?? 0);
+
+  // Auto-show onboarding modal for fresh users (step === 0)
+  useEffect(() => {
+    if (!onboardingCompleted && onboardingStep === 0 && !actAsMode && !viewAsMode) {
+      setShowOnboarding(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 連続ログインXPトリガー（初回マウント時のみ）
   useEffect(() => {
@@ -168,13 +187,52 @@ export default function StudentDashboardClient({
         </div>
       )}
 
-      {/* キャラクター表示 */}
+      {/* オンボーディング未完了バナー（途中離脱した場合） */}
+      {!onboardingCompleted && onboardingStep >= 1 && !actAsMode && !viewAsMode && (
+        <div className="mb-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span className="text-sm text-purple-700 font-medium">
+            ✨ プロフィールを完成させて、あなたにピッタリの技を提案してもらおう
+          </span>
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="px-4 py-1.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-bold rounded-lg hover:shadow-md transition"
+          >
+            続きから始める
+          </button>
+        </div>
+      )}
+
+      {/* オンボーディングモーダル */}
+      {showOnboarding && (
+        <OnboardingModal
+          userId={userId}
+          initialStep={onboardingStep}
+          onComplete={() => {
+            setShowOnboarding(false);
+            setOnboardingCompleted(true);
+          }}
+          onDismiss={() => {
+            setShowOnboarding(false);
+            // Refresh step from latest save
+            fetch("/api/onboarding").then(r => r.json()).then(res => {
+              if (res.data) {
+                setOnboardingStep(res.data.onboarding_step ?? 0);
+                setOnboardingCompleted(res.data.onboarding_completed ?? false);
+              }
+            }).catch(() => {});
+          }}
+        />
+      )}
+
+      {/* v6.4: UIから削除（バックエンド機能は残す）。復活時はこのコメントを解除
       <CharacterDisplay
         characterState={character}
         compact
         onCharacterUpdate={(c) => setCharacter(c)}
       />
+      */}
 
+      {/* v6.4: タブメニューをUIから削除（スキルツリーファースト化）。復活時はこのコメントを解除
       <div className="flex gap-2 mb-6">
         {tabs.map((t) => (
           <button
@@ -190,6 +248,7 @@ export default function StudentDashboardClient({
           </button>
         ))}
       </div>
+      */}
 
       {tab === "checklist" && (
         <>

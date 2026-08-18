@@ -43,6 +43,8 @@ export default async function StudentDashboard({
       const dest = profile.role === "super_admin" || profile.role === "admin" ? "admin" : "teacher";
       redirect("/dashboard/" + dest);
     }
+    // v6.4: 生徒はスキルツリーファースト（view_as=student 以外はリダイレクト）
+    redirect("/dashboard/skill-tree");
   }
 
   // act_as の場合、対象ユーザーのプロフィールを取得
@@ -91,6 +93,14 @@ export default async function StudentDashboard({
     ? { mode: "student" as const, actualRole: profile.role }
     : undefined;
 
+  // オンボーディング状態（act_as / view_as の場合は表示しない）
+  const onboardingState = (!actAsUserId && !viewAsStudent)
+    ? {
+        completed: profile.onboarding_completed ?? false,
+        step: profile.onboarding_step ?? 0,
+      }
+    : undefined;
+
   return (
     <div className="min-h-screen bg-gradient-main">
       <Header profile={actAsUserId ? targetProfile : profile} actualRole={viewAsStudent ? profile.role : undefined} />
@@ -103,6 +113,7 @@ export default async function StudentDashboard({
           initialCharacterState={characterState}
           actAsMode={actAsMode}
           viewAsMode={viewAsMode}
+          onboardingState={onboardingState}
         />
       </main>
     </div>
